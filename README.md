@@ -1,5 +1,5 @@
 Initial Database
-<img width="1440" alt="image" src="https://github.com/user-attachments/assets/d0225901-1fe0-4f52-bccb-045e247128cb">
+<img width="1440" alt="image" src="https://github.com/user-attachments/assets/13f0de1a-3076-4df0-b30e-c1503cf5600c">
 
 Adding Users
 <img width="1440" alt="image" src="https://github.com/user-attachments/assets/ab837443-91a5-40ce-8502-4b2f881bd783">
