@@ -1,3 +1,30 @@
+If you want to use this project just clone it using git clone
+<br>
+then make a virtual enviroment by
+`python3 -m venv env`
+
+then activate the virtual environment by
+`. env/bin/activate`
+
+then install flask, SQLAlchemy and PyMySQL by
+`pip install flask`
+`pip install flask flask-sqlalchemy`
+`pip install pymysql`
+
+then project is ready to work
+<br>
+You can add user by /addUser api of type POST and pass the json object in the body
+<br>
+User have following fields: id, firstname, lastname, email, password
+<br>
+You can fetch all users by /readAllUsers api of type GET
+<br>
+You can update the user by /updateUser/id api of type PUT and pass the json object in the body
+<br>
+You can update some information of the user by /updateSomeInfo/id api of type PATCH and pass the json object in the body
+<br>
+You can delete user by /deleteUser/id api of type DELETE
+
 Initial Database
 <img width="1440" alt="image" src="https://github.com/user-attachments/assets/13f0de1a-3076-4df0-b30e-c1503cf5600c">
 
