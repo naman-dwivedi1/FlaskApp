@@ -1,6 +1,7 @@
 from flask import Flask,request,jsonify
 from flask_sqlalchemy import SQLAlchemy
-import json
+
+import re
 
 import pymysql
 pymysql.install_as_MySQLdb()
@@ -9,6 +10,8 @@ password='Enemendwdi1001'
 app=Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://root:{password}@localhost:3306/FlaskApp'
 db = SQLAlchemy(app)
+
+regex=r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
 @app.route("/",methods=["GET"])
 def Welcome():
@@ -22,59 +25,150 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True , nullable=False)
     password = db.Column(db.String(120),nullable=False)
     
-@app.route("/addUser", methods=["POST"])
-def addUser():
-    data=request.json
-    newUser=User(firstname=data['firstname'],lastname=data['lastname'],email=data['email'],password=data['password'])
-    db.session.add(newUser)
-    db.session.commit()
-    return "User Added Successfully"
+fields=['firstname','lastname','email','password']
+    
+@app.route("/user", methods=["GET","POST","PUT","PATCH","DELETE"])
+def user():
+    if(request.method=="GET"):
+        try:
+            args = request.args
+            if len(args) == 0:
+                users=User.query.all()
+                return jsonify([{
+                    "id": user.id,
+                    "firstname": user.firstname,
+                    "lastname": user.lastname,
+                    "email": user.email,
+                    "password": user.password,
+                } for user in users])
+            else:
+                try:
+                    user=User.query.filter_by(email=args['email']).first()
+                except: return jsonify({'error': 'Give correct key as email in params'}), 400
+                if user:
+                    return jsonify({
+                        "id": user.id,
+                        "firstname": user.firstname,
+                        "lastname": user.lastname,
+                        "email": user.email,
+                        "password": user.password,
+                    })
+                else: return jsonify({'error': 'User with this email does not exists'}), 400
+        except:
+            return jsonify({'error': "Internal Server Error"}), 500
+    elif(request.method=="POST"):
+        try:
+            try:
+                data=request.json
+            except: return jsonify({'error': "Please provide all necessary user details to add user in the database"}), 400
+            try: 
+                user=User.query.filter_by(email=data['email']).first()
+            except: return jsonify({'error': 'Give correct key as email in body'}), 400
+            if user: return jsonify({'error': 'User already exists'}), 400
+            else:
+                if(re.fullmatch(regex, data["email"])==None): return jsonify({'error': 'Incorrect Email format'}), 400
+                newUser=User()
+                for key,value in data.items():
+                    setattr(newUser,key,value)
+                db.session.add(newUser)
+                db.session.commit()
+                return "User Added Successfully", 200
+        except:
+            return jsonify({'error': "Internal Server Error"}), 500
+    elif(request.method=="PUT"):
+        try:
+            args=request.args
+            if len(args) == 0: return jsonify({'error': "Please provide email of the user to be updated"}), 400
+            try:   
+                data=request.json
+            except: return jsonify({'error': "Please provide some fields to update"}), 400
+            try:
+                user=User.query.filter_by(email=args["email"]).first()
+            except: return jsonify({'error': 'Give correct key as email in params'}), 400
+            if user:  
+                for key, value in data.items():
+                    if hasattr(user, key)==False:
+                        return jsonify({'error': "No such field exists to update"}), 400
+                    else:
+                        if(getattr(user,key)!=value):
+                            setattr(user, key, value)
+                db.session.commit()
+                return "User Updated Successfully", 200
+            else: return jsonify({'error': 'User with this email does not exists'}), 400
+        except:
+            return jsonify({'error': "Internal Server Error"}), 500
+    elif(request.method=="PATCH"):
+        try:
+            try:
+                data=request.json
+            except: return jsonify({'error': "Please provide some fields to update"}), 400
+            args=request.args
+            if len(args) == 0:
+                try:
+                    user=User.query.filter_by(email=data['email']).first()
+                except: return jsonify({'error': "Please provide correct key as email in body"}), 400
+                if user:
+                    for key, value in data.items():
+                        if hasattr(user, key)==False:
+                            return jsonify({'error': "No such field exists to update"}), 400
+                        else:
+                            if(getattr(user,key)!=value):
+                                setattr(user, key, value)
+                    db.session.commit()
+                    return "User Patched Updated Successfully", 200
+                else:
+                    if(re.fullmatch(regex, data["email"])==None): return jsonify({'error': 'Incorrect Email format'}), 400
+                    newUser=User()
+                    keys=data.keys()
+                    for field in fields:
+                        if field not in keys: return jsonify({'error': "Please provide all the fields that are necessary"}), 400
+                    for key,value in data.items():
+                        if hasattr(newUser, key)==False:
+                            return jsonify({'error': "No such field exists to update"}), 400
+                        setattr(newUser,key,value)
+                    db.session.add(newUser)
+                    db.session.commit()
+                    return "User Patched Added Successfully", 200
+            else:
+                try:
+                    user=User.query.filter_by(email=args['email']).first()
+                except: return jsonify({'error': 'Please provide correct key as email in params'}), 400
+                if user:
+                    for key, value in data.items():
+                        if hasattr(user, key)==False:
+                            return jsonify({'error': "No such field exists to update"}), 400
+                        else:
+                            if(getattr(user,key)!=value):
+                                setattr(user, key, value)
+                    db.session.commit()
+                    return "User Patched Updated Successfully", 200
+                else: return jsonify({'error': 'User with this email does not exists'}), 400
+        except:
+            return jsonify({'error': "Internal Server Error"}), 500
+    elif(request.method=="DELETE"):
+        try:
+            args=request.args
+            if len(args) == 0: return jsonify({'error': "Please provide email of the user to be deleted"}), 400
+            else:
+                try:
+                    user=User.query.filter_by(email=args["email"]).first()
+                except: return jsonify({'error': 'Please provide correct key as email in params'}), 400
+                if user:
+                    db.session.delete(user)
+                    db.session.commit()
+                    return "User Deleted Successfully", 200 
+                else: return jsonify({'error': 'User with this email does not exists'}), 400
+        except:
+            return jsonify({'error': "Internal Server Error"}), 500
+    else: return "Unknown type of method request"
+    
+# @app.errorhandler(400)
+# def page_not_found(error):
+#     return "Client Side Error"
 
-@app.route("/readAllUsers",methods=["GET"])
-def readAllUsers():
-    users = User.query.all()
-    return jsonify([{
-        "id": user.id,
-        "firstname": user.firstname,
-        "lastname": user.lastname,
-        "email": user.email,
-        "password": user.password,
-    } for user in users])
-
-@app.route("/updateUser/<int:id>",methods=["PUT"])
-def updateUser(id):
-    user=User.query.get(id)
-    data=request.json
-    for key, value in data.items():
-        if hasattr(user, key):
-            setattr(user, key, value)
-    db.session.commit()
-    return "User Updated Successfully"
-
-@app.route("/updateSomeInfo/<int:id>",methods=["PATCH"])
-def updateSomeInfo(id):
-    user=User.query.get(id)
-    data=request.json
-    for key, value in data.items():
-        if hasattr(user, key):
-            setattr(user, key, value)
-    db.session.commit()
-    return "User Info Updated Successfully"
-
-@app.route("/deleteUser/<int:id>",methods=["DELETE"])
-def deleteUser(id):
-    user=User.query.get(id)
-    db.session.delete(user)
-    db.session.commit()
-    return "User Deleted Successfully"
-
-@app.errorhandler(400)
-def page_not_found(error):
-    return "Client Side Error"
-
-@app.errorhandler(500)
-def page_not_found(error):
-    return "Server Side Error"
+# @app.errorhandler(500)
+# def page_not_found(error):
+#     return "Server Side Error"
 
 if __name__ == "__main__":
     with app.app_context():
