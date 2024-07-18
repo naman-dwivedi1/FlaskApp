@@ -1,5 +1,6 @@
 from flask import Flask,request,jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 
 import re
 
@@ -10,6 +11,7 @@ password='Enemendwdi1001'
 app=Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://root:{password}@localhost:3306/FlaskApp'
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 regex=r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
@@ -68,7 +70,14 @@ def user():
             else:
                 if(re.fullmatch(regex, data["email"])==None): return jsonify({'error': 'Incorrect Email format'}), 400
                 newUser=User()
+                keys=data.keys()
+                for field in fields:
+                    if field not in keys: return jsonify({'error': "Please provide all the fields that are necessary"}), 400
                 for key,value in data.items():
+                    if hasattr(newUser, key)==False:
+                        return jsonify({'error': "No such field exists to update"}), 400
+                    if(key=='password'):
+                        value = bcrypt.generate_password_hash(value).decode('utf-8')  
                     setattr(newUser,key,value)
                 db.session.add(newUser)
                 db.session.commit()
@@ -91,6 +100,8 @@ def user():
                         return jsonify({'error': "No such field exists to update"}), 400
                     else:
                         if(getattr(user,key)!=value):
+                            if(key=='password'):
+                                value = bcrypt.generate_password_hash(value).decode('utf-8')    
                             setattr(user, key, value)
                 db.session.commit()
                 return "User Updated Successfully", 200
@@ -113,6 +124,8 @@ def user():
                             return jsonify({'error': "No such field exists to update"}), 400
                         else:
                             if(getattr(user,key)!=value):
+                                if(key=='password'):
+                                    value = bcrypt.generate_password_hash(value).decode('utf-8')  
                                 setattr(user, key, value)
                     db.session.commit()
                     return "User Patched Updated Successfully", 200
@@ -125,6 +138,8 @@ def user():
                     for key,value in data.items():
                         if hasattr(newUser, key)==False:
                             return jsonify({'error': "No such field exists to update"}), 400
+                        if(key=='password'):
+                            value = bcrypt.generate_password_hash(value).decode('utf-8')  
                         setattr(newUser,key,value)
                     db.session.add(newUser)
                     db.session.commit()
@@ -139,6 +154,8 @@ def user():
                             return jsonify({'error': "No such field exists to update"}), 400
                         else:
                             if(getattr(user,key)!=value):
+                                if(key=='password'):
+                                    value = bcrypt.generate_password_hash(value).decode('utf-8')  
                                 setattr(user, key, value)
                     db.session.commit()
                     return "User Patched Updated Successfully", 200
