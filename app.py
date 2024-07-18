@@ -1,15 +1,18 @@
 from flask import Flask,request,jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
+import os
 
 import re
 
 import pymysql
 pymysql.install_as_MySQLdb()
 
-password='Enemendwdi1001'
+load_dotenv()
+
 app=Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://root:{password}@localhost:3306/FlaskApp'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DB_URL')
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
